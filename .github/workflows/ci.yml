@@ -5,21 +5,26 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
       
     steps:
       - name: Clone repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: download
+      - name: Install yt-dlp
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip
+          pip3 install yt-dlp
+
+      - name: Download videos
         run: |
           git config --local user.email "justjavac@gmail.com"
           git config --local user.name "迷渡"
           git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git pull --rebase
-          ./bin/youtube-dl --config-location config.txt
-          git add .
-          git commit -m "download youtube video"
-          git push
+          git pull --rebase || true
+          yt-dlp -a playlist.txt -o "downloads/%(title)s.%(ext)s" || true
+          git add downloads/ || true
+          git commit -m "download youtube video" || echo "No changes"
+          git push || echo "Push failed"
